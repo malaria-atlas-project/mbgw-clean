@@ -53,12 +53,19 @@ def pr(eps_p_f, two_ten_facs=two_ten_factors(n_facs)):
 # FIXME: Fill these in!    
 BurdenTracePath = None
 N_year = None    
+xplot = np.linspace(0.001,1,100)
+xplot_aug = np.concatenate(([0],xplot))
 def incidence(eps_p_f, 
                 two_ten_facs=two_ten_factors(n_facs),
                 p2b = BurdenPredictor(BurdenTracePath, N_year)):
     pr = invlogit(eps_p_f) * two_ten_facs[np.random.randint(n_facs)]
-    f = p2b.f(np.random.randint(len(p2b.f)))
-    return f(pr)
+    i = np.random.randint(len(p2b.f))
+    mu = self.f[i](pr)
+    
+    # Uncomment and draw a negative binomial variate to get incidence over a finite time horizon.
+    # r = (self.r_int[i] + self.r_lin[i] * pr_where_pr_pos_5km + self.r_quad[i] * pr_where_pr_pos_5km**2)
+    
+    return mu
     
 map_postproc = [pr, incidence]
 
