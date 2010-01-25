@@ -35,7 +35,6 @@ import gc
 from tables import ObjectAtom
 from generic_mbg import *
 
-
 f_labels = ['eps_p_f']
 fs_have_nugget = {'eps_p_f': True}
 nugget_labels = {'eps_p_f': 'V'}
@@ -47,9 +46,41 @@ diags_safe = {'eps_p_f': True}
 # Extra stuff for predictive ops.
 n_facs = 1000
 # postproc = invlogit
-def map_postproc(eps_p_f, two_ten_facs=two_ten_factors(n_facs)):
+
+def pr(eps_p_f, two_ten_facs=two_ten_factors(n_facs)):
     return invlogit(eps_p_f) * two_ten_facs[np.random.randint(n_facs)]
+
+# FIXME: Fill these in!    
+BurdenTracePath = None
+N_year = None    
+def incidence(eps_p_f, 
+                two_ten_facs=two_ten_factors(n_facs),
+                p2b = BurdenPredictor(BurdenTracePath, N_year)):
+    pr = invlogit(eps_p_f) * two_ten_facs[np.random.randint(n_facs)]
+    f = p2b.f(np.random.randint(len(p2b.f)))
+    return f(pr)
     
+map_postproc = [pr, incidence]
+
+bins = np.array([0,.001,.01,.05,.1,.2,.4,1])
+
+def binfn(arr, bins=bins):
+    out = np.digitize(arr, bins)
+    return out
+
+bin_reduce = histogram_reduce(bins,binfn)
+
+def bin_finalize(products, n, bins=bins, bin_reduce=bin_reduce):
+    out = {}
+    for i in xrange(len(bins)-1):
+        out['p-class-%i-%i'%(bins[i]*100,bins[i+1]*100)] = products[bin_reduce][:,i+1].astype('float')/n
+    out['most-likely-class'] = np.argmax(products[bin_reduce], axis=1)
+    out['p-most-likely-class'] = np.max(products[bin_reduce], axis=1).astype('float') / n
+    return out
+        
+extra_reduce_fns = [bin_reduce]    
+extra_finalize = bin_finalize
+
 metadata_keys = ['ti','fi','ui','with_stukel','chunk','disttol','ttol']
 
 def mcmc_init(M):
