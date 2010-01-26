@@ -34,6 +34,8 @@ import gc
 # from get_covariates import extract_environment_to_hdf5
 from tables import ObjectAtom
 from generic_mbg import *
+from pr_incidence import BurdenPredictor
+from pylab import *
 
 f_labels = ['eps_p_f']
 fs_have_nugget = {'eps_p_f': True}
@@ -47,29 +49,38 @@ diags_safe = {'eps_p_f': True}
 n_facs = 1000
 # postproc = invlogit
 
-def pr(eps_p_f, two_ten_facs=two_ten_factors(n_facs)):
-    return invlogit(eps_p_f) * two_ten_facs[np.random.randint(n_facs)]
+ttf = two_ten_factors(n_facs)
 
-# FIXME: Fill these in!    
-BurdenTracePath = None
-N_year = None    
+def pr(eps_p_f, two_ten_facs=ttf):
+    out = eps_p_f.copy('F')
+    out = invlogit(out) * two_ten_facs[np.random.randint(n_facs)]
+    return out
+
+
+BurdenTracePath = '/home/pwg/MAP-afghanistan/CSE_Asia_and_Americas_scale_0.6_model_exp.hdf5'
+N_year = 1./12
 xplot = np.linspace(0.001,1,100)
 xplot_aug = np.concatenate(([0],xplot))
 def incidence(eps_p_f, 
-                two_ten_facs=two_ten_factors(n_facs),
-                p2b = BurdenPredictor(BurdenTracePath, N_year)):
-    pr = invlogit(eps_p_f) * two_ten_facs[np.random.randint(n_facs)]
+                two_ten_facs=ttf,
+                p2b = BurdenPredictor(BurdenTracePath, N_year),
+                N_year = N_year):
+
+    pr = eps_p_f.copy('F')
+    pr = invlogit(pr) * two_ten_facs[np.random.randint(n_facs)]
+    
     i = np.random.randint(len(p2b.f))
-    mu = self.f[i](pr)
+    mu = p2b.f[i](pr)
     
     # Uncomment and draw a negative binomial variate to get incidence over a finite time horizon.
-    # r = (self.r_int[i] + self.r_lin[i] * pr_where_pr_pos_5km + self.r_quad[i] * pr_where_pr_pos_5km**2)
-    
-    return mu
+    r = (p2b.r_int[i] + p2b.r_lin[i] * pr + p2b.r_quad[i] * pr**2)
+    ar = pm.rgamma(beta=r/mu, alpha=r*N_year)
+
+    return (1-np.exp(-ar))
     
 map_postproc = [pr, incidence]
 
-bins = np.array([0,.001,.01,.05,.1,.2,.4,1])
+bins = np.array([0,.1,.5,1])
 
 def binfn(arr, bins=bins):
     out = np.digitize(arr, bins)
