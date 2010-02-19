@@ -13,21 +13,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/#
 
-#Change
-import pymc as pm
 import numpy as np
-import os
-from copy import copy
-from correction_factors import age_corr_likelihoods, age_corr_factors, two_ten_factors
-from scipy import interpolate as interp
-from st_cov_fun import *
-import time
-import auxiliary_data
-# import MAPData
+import pymc as pm
 import gc
-# from get_covariates import extract_environment_to_hdf5
-from tables import ObjectAtom
+from map_utils import *
 from generic_mbg import *
+from st_cov_fun import *
+import generic_mbg
+import warnings
+from agecorr import age_corr_likelihoods
+from generic-afgh import P_trace, S_trace, F_trace, a_pred
+from scipy import interpolate as interp
+
 
 __all__ = ['make_model']
 
@@ -112,6 +109,8 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
     ti = [np.array(tii) for tii in ti]
     fi = np.array(fi)   
     logp_mesh = data_mesh[ui,:]
+    
+    covariate_values_on_logp = dict([(k,covariate_values[k][ui]) for k in covariate_values.keys()])
         
     # =====================
     # = Create PyMC model =
@@ -119,7 +118,9 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
     
     init_OK = False
     while not init_OK:
-        M, M_eval = trivial_means(logp_mesh)
+        @pm.deterministic()
+        def M():
+            return pm.gp.Mean(pm.gp.zero_fn)
     
         # Inverse-gamma prior on nugget variance V.
         tau = pm.Gamma('tau', value=2., alpha=.001, beta=.001/.25)
@@ -185,18 +186,11 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
             # A Deterministic valued as a Covariance object. Uses covariance my_st, defined above. 
             @pm.deterministic
             def C(amp=amp,scale=scale,inc=inc,ecc=ecc,scale_t=scale_t, t_lim_corr=t_lim_corr, sin_frac=sin_frac):
+                eval_fun = CovarianceWithCovariates(my_st, logp_mesh, covariate_values_on_logp)
                 return pm.gp.FullRankCovariance(my_st, amp=amp, scale=scale, inc=inc, ecc=ecc,st=scale_t, sd=.5,
                                                 tlc=t_lim_corr, sf = sin_frac)
 
-            covariate_dict, C_eval = cd_and_C_eval(covariate_values, C, data_mesh, ui)
-
-            # The field evaluated at the uniquified data locations
-            f = pm.MvNormalCov('f',M_eval,C_eval,value=M_eval.value)
-            
-            # The field evaluated at all the data locations
-            @pm.deterministic(trace=False)
-            def f_eval(f=f):
-                return f[fi]
+            sp_sub = pm.gp.GPSubmodel('sp_sub',M,C,logp_mesh)
             
             init_OK = True
         except pm.ZeroProbability, msg:
@@ -213,7 +207,7 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
     
     # Obtain the spline representation of the log of the Monte Carlo-integrated 
     # likelihood function at each datapoint. The nodes are at .01,.02,...,.98,.99 .
-    junk, splreps = age_corr_likelihoods(lo_age, up_age, pos, neg, 10000, np.arange(.01,1.,.01))
+    junk, splreps = age_corr_likelihoods(lo_age, up_age, pos, neg, 10000, np.arange(.01,1.,.01), a_pred, P_trace, S_trace, F_trace)
     for i in xrange(len(splreps)):
         splreps[i] = list(splreps[i])
 
@@ -234,7 +228,7 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
 
         # epsilon plus f, given f.
         @pm.stochastic(trace=False, dtype=np.float)
-        def eps_p_f_now(value=val_now[this_slice], f=f_eval, V=V, this_slice = this_slice):
+        def eps_p_f_now(value=val_now[this_slice], f=sp_sub.f_eval, V=V, this_slice = this_slice):
             return pm.normal_like(value, f[this_slice], 1./V)
         eps_p_f_now.__name__ = "eps_p_f%i"%i
         eps_p_f_list.append(eps_p_f_now)
