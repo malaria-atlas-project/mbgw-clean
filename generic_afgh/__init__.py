@@ -28,9 +28,10 @@ age_dist_file.close()
 
 two_ten_factors = agecorr.two_ten_factors(10000, P_trace, S_trace, F_trace)
 
-from generic_mbg import FieldStepper, invlogit
+from generic_mbg import FieldStepper, invlogit, histogram_reduce
 from pymc import thread_partition_array
 from pymc.gp import GPEvaluationGibbs
+import pymc as pm
 import generic_afgh
 import os
 root = os.path.split(generic_afgh.__file__)[0]
@@ -54,10 +55,7 @@ def vivax(sp_sub):
     pm.map_noreturn(vivax_postproc, [(out, sp_sub_0, sp_sub_v, p1, ttf, cmin[i], cmax[i]) for i in xrange(len(cmax))])
     return out
 
-
-ttf = two_ten_factors(n_facs)
-
-def pr(eps_p_f, two_ten_facs=ttf):
+def pr(eps_p_f, two_ten_facs=two_ten_factors):
     pr = eps_p_f.copy('F')
     pr = invlogit(pr) * two_ten_facs[np.random.randint(len(two_ten_facs))]
     return pr
@@ -66,8 +64,8 @@ N_year = 1./12
 xplot = np.linspace(0.001,1,100)
 xplot_aug = np.concatenate(([0],xplot))
 def incidence(sp_sub, 
-                two_ten_facs=ttf,
-                p2b = BurdenPredictor(CSE_Asia_and_Americas_scale_0.6_model_exp.hdf5, N_year),
+                two_ten_facs=two_ten_factors,
+                p2b = BurdenPredictor('CSE_Asia_and_Americas_scale_0.6_model_exp.hdf5', N_year),
                 N_year = N_year):
     pr = eps_p_f.copy('F')
     pr = invlogit(pr) * two_ten_facs[np.random.randint(len(two_ten_facs))]
@@ -106,3 +104,5 @@ def mcmc_init(M):
     M.use_step_method(GPEvaluationGibbs, M.sp_sub, M.V, M.eps_p_f)
 
 non_cov_columns = {'lo_age': 'int', 'up_age': 'int', 'pos': 'float', 'neg': 'float'}
+
+from model import *

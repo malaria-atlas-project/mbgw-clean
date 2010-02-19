@@ -22,7 +22,7 @@ from st_cov_fun import *
 import generic_mbg
 import warnings
 from agecorr import age_corr_likelihoods
-from generic-afgh import P_trace, S_trace, F_trace, a_pred
+from generic_afgh import P_trace, S_trace, F_trace, a_pred
 from scipy import interpolate as interp
 
 
@@ -226,10 +226,12 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
         
         this_slice = slice(chunk*i, min((i+1)*chunk, data_mesh.shape[0]))
 
+        this_f = sp_sub.f_eval[fi][this_slice]
+
         # epsilon plus f, given f.
         @pm.stochastic(trace=False, dtype=np.float)
-        def eps_p_f_now(value=val_now[this_slice], f=sp_sub.f_eval, V=V, this_slice = this_slice):
-            return pm.normal_like(value, f[this_slice], 1./V)
+        def eps_p_f_now(value=val_now[this_slice], f=this_f, V=V):
+            return pm.normal_like(value, this_f, 1./V)
         eps_p_f_now.__name__ = "eps_p_f%i"%i
         eps_p_f_list.append(eps_p_f_now)
         
@@ -255,11 +257,9 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
         for i in xrange(len(eps_p_f_list)):
             out[chunk*i:min((i+1)*chunk, data_mesh.shape[0])] = eps_p_f_list[i]
         return out
-    
-    covariate_dicts = {'eps_p_f':covariate_dict}
+
 
     out = locals()
-    for v in covariate_dict.iteritems():
-        out[v[0]] = v[1][0]
+
     return out
     
