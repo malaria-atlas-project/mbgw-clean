@@ -226,12 +226,10 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
         
         this_slice = slice(chunk*i, min((i+1)*chunk, data_mesh.shape[0]))
 
-        this_f = sp_sub.f_eval[fi][this_slice]
-
         # epsilon plus f, given f.
         @pm.stochastic(trace=False, dtype=np.float)
-        def eps_p_f_now(value=val_now[this_slice], f=this_f, V=V):
-            return pm.normal_like(value, this_f, 1./V)
+        def eps_p_f_now(value=val_now[this_slice], f=sp_sub.f_eval, V=V, sl=this_slice):
+            return pm.normal_like(value, f[fi][sl], 1./V)
         eps_p_f_now.__name__ = "eps_p_f%i"%i
         eps_p_f_list.append(eps_p_f_now)
         
