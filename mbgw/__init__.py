@@ -32,9 +32,9 @@ from generic_mbg import FieldStepper, invlogit, histogram_reduce
 from pymc import thread_partition_array
 from pymc.gp import GPEvaluationGibbs
 import pymc as pm
-import generic_afgh
+import mbgw
 import os
-root = os.path.split(generic_afgh.__file__)[0]
+root = os.path.split(mbgw.__file__)[0]
 pm.gp.cov_funs.cov_utils.mod_search_path.append(root)
 
 def check_data(input):

@@ -22,7 +22,7 @@ from st_cov_fun import *
 import generic_mbg
 import warnings
 from agecorr import age_corr_likelihoods
-from generic_afgh import P_trace, S_trace, F_trace, a_pred
+from mbgw import P_trace, S_trace, F_trace, a_pred
 from scipy import interpolate as interp
 
 
