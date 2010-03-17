@@ -55,8 +55,8 @@ def vivax(sp_sub):
     pm.map_noreturn(vivax_postproc, [(out, sp_sub_0, sp_sub_v, p1, ttf, cmin[i], cmax[i]) for i in xrange(len(cmax))])
     return out
 
-def pr(eps_p_f, two_ten_facs=two_ten_factors):
-    pr = eps_p_f.copy('F')
+def pr(sp_sub, two_ten_facs=two_ten_factors):
+    pr = sp_sub.copy('F')
     pr = invlogit(pr) * two_ten_facs[np.random.randint(len(two_ten_facs))]
     return pr
 
@@ -67,7 +67,7 @@ def incidence(sp_sub,
                 two_ten_facs=two_ten_factors,
                 p2b = BurdenPredictor('CSE_Asia_and_Americas_scale_0.6_model_exp.hdf5', N_year),
                 N_year = N_year):
-    pr = eps_p_f.copy('F')
+    pr = sp_sub.copy('F')
     pr = invlogit(pr) * two_ten_facs[np.random.randint(len(two_ten_facs))]
     i = np.random.randint(len(p2b.f))
     mu = p2b.f[i](pr)
@@ -99,6 +99,15 @@ extra_reduce_fns = [bin_reduce]
 extra_finalize = bin_finalize
 
 metadata_keys = ['ti','fi','ui','with_stukel','chunk','disttol','ttol']
+
+def pr(data):
+    obs = data.pos
+    n = data.pos + data.neg
+    def f(sp_sub, two_ten_facs=two_ten_factors):
+        return pm.flib.invlogit(sp_sub)*two_ten_facs[np.random.randint(len(two_ten_facs))]
+    return obs, n, f
+
+validate_postproc=[pr]
 
 def mcmc_init(M):
     M.use_step_method(GPEvaluationGibbs, M.sp_sub, M.V, M.eps_p_f)
