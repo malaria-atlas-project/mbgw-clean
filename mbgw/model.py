@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/#
 
 import numpy as np
+import hashlib
 import pymc as pm
 import gc
 from map_utils import *
@@ -24,6 +25,7 @@ import warnings
 from agecorr import age_corr_likelihoods
 from mbgw import P_trace, S_trace, F_trace, a_pred
 from scipy import interpolate as interp
+import os, cPickle
 
 
 __all__ = ['make_model']
@@ -207,7 +209,12 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
     
     # Obtain the spline representation of the log of the Monte Carlo-integrated 
     # likelihood function at each datapoint. The nodes are at .01,.02,...,.98,.99 .
-    junk, splreps = age_corr_likelihoods(lo_age, up_age, pos, neg, 10000, np.arange(.01,1.,.01), a_pred, P_trace, S_trace, F_trace)
+    splrep_fname = hashlib.sha1(lo_age.tostring()+up_age.tostring()+pos.tostring()+neg.tostring())+'.pickle'
+    if splrep_fname in os.listdir('.'):
+        splreps = cPickle.loads(file(splrep_fname).read())
+    else:
+        junk, splreps = age_corr_likelihoods(lo_age, up_age, pos, neg, 10000, np.arange(.01,1.,.01), a_pred, P_trace, S_trace, F_trace)
+        file(splrep_fname,'w').write(cPickle.dumps(splreps))
     for i in xrange(len(splreps)):
         splreps[i] = list(splreps[i])
 
