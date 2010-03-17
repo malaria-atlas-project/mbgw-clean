@@ -209,7 +209,7 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
     
     # Obtain the spline representation of the log of the Monte Carlo-integrated 
     # likelihood function at each datapoint. The nodes are at .01,.02,...,.98,.99 .
-    splrep_fname = hashlib.sha1(lo_age.tostring()+up_age.tostring()+pos.tostring()+neg.tostring())+'.pickle'
+    splrep_fname = hashlib.sha1(lo_age.tostring()+up_age.tostring()+pos.tostring()+neg.tostring()).hexdigest()+'.pickle'
     if splrep_fname in os.listdir('.'):
         splreps = cPickle.loads(file(splrep_fname).read())
     else:
