@@ -188,7 +188,7 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
             # A Deterministic valued as a Covariance object. Uses covariance my_st, defined above. 
             @pm.deterministic
             def C(amp=amp,scale=scale,inc=inc,ecc=ecc,scale_t=scale_t, t_lim_corr=t_lim_corr, sin_frac=sin_frac):
-                eval_fun = CovarianceWithCovariates(my_st, logp_mesh, covariate_values_on_logp)
+                eval_fun = CovarianceWithCovariates(my_st, logp_mesh, covariate_values_on_logp, fac=1.e4)
                 return pm.gp.FullRankCovariance(eval_fun, amp=amp, scale=scale, inc=inc, ecc=ecc,st=scale_t, sd=.5,
                                                 tlc=t_lim_corr, sf = sin_frac)
 
