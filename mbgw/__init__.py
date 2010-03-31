@@ -76,7 +76,10 @@ def incidence(sp_sub,
     r = (p2b.r_int[i] + p2b.r_lin[i] * pr + p2b.r_quad[i] * pr**2)
     ar = pm.rgamma(beta=r/mu, alpha=r*N_year)
 
-    return (1-np.exp(-ar))
+    out = (1-np.exp(-ar))
+    out[np.where(out==0)]=1e-10
+    out[np.where(out==1)]=1-(1e-10)
+    return out
     
 map_postproc = [pr, incidence]
 bins = np.array([0,.1,.5,1])
