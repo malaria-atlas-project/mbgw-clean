@@ -167,7 +167,7 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
         vars_to_writeout.extend(['inc','ecc','amp','scale','scale_t','t_lim_corr','sin_frac'])
     
         # Collect stochastic variables with observed=False for the adaptive Metropolis stepper.
-        trial_stochs = [tau, a1, a2, sqrt_ecc, log_amp, log_scale, scale_t, t_lim_corr, sin_frac]
+        # trial_stochs = [tau, a1, a2, sqrt_ecc, log_amp, log_scale, scale_t, t_lim_corr, sin_frac]
         nondata_stochs = []
         for stoch in trial_stochs:
             if not stoch.observed:
