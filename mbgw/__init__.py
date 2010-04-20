@@ -113,7 +113,7 @@ def pr(data):
 validate_postproc=[pr]
 
 def mcmc_init(M):
-    M.use_step_method(GPEvaluationGibbs, M.sp_sub, M.V, M.eps_p_f_list)
+    M.use_step_method(GPEvaluationGibbs, M.sp_sub, M.V, M.eps_p_f_list, ti=M.ti)
 
 non_cov_columns = {'lo_age': 'int', 'up_age': 'int', 'pos': 'float', 'neg': 'float'}
 
