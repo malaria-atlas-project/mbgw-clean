@@ -101,7 +101,7 @@ def unexposed_risk(sp_sub):
     ur[np.where(ur==0)]=1e-10
     ur[np.where(ur==1)]=1-(1e-10)
 
-    return 
+    return ur
     
 map_postproc = [pr, unexposed_risk]
 bins = np.array([0,.01,.1,.5,1])
