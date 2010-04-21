@@ -99,7 +99,7 @@ def unexposed_risk(sp_sub):
     ur = 1-np.exp(-r*k*((1-pr)**(-1./k)-1)*trip_duration) 
 
     ur[np.where(ur==0)]=1e-10
-    out[np.where(ur==1)]=1-(1e-10)
+    ur[np.where(ur==1)]=1-(1e-10)
 
     return 
     
