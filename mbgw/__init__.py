@@ -47,6 +47,12 @@ obs_labels = {'sp_sub': 'eps_p_f'}
 n_facs = 1000
 # postproc = invlogit
 
+# params for naive risk mapping
+r = .1/200
+k = 1./4.2
+trip_duration = 30  # in days
+
+
 def vivax(sp_sub):
     cmin, cmax = thread_partition_array(sp_sub)
     out = sp_sub_b.copy('F')     
@@ -63,6 +69,7 @@ def pr(sp_sub, two_ten_facs=two_ten_factors):
 N_year = 1./12
 xplot = np.linspace(0.001,1,100)
 xplot_aug = np.concatenate(([0],xplot))
+
 def incidence(sp_sub, 
                 two_ten_facs=two_ten_factors,
                 p2b = BurdenPredictor('CSE_Asia_and_Americas_scale_0.6_model_exp.hdf5', N_year),
@@ -76,13 +83,19 @@ def incidence(sp_sub,
     r = (p2b.r_int[i] + p2b.r_lin[i] * pr + p2b.r_quad[i] * pr**2)
     ar = pm.rgamma(beta=r/mu, alpha=r*N_year)
 
-    out = (1-np.exp(-ar))
+    #out = (1-np.exp(-ar)) # what we originally produced e.g. for Afghanistan
+    out = ar               # effectively what we did for burden paper
     out[np.where(out==0)]=1e-10
     out[np.where(out==1)]=1-(1e-10)
     return out
     
-map_postproc = [pr, incidence]
-bins = np.array([0,.1,.5,1])
+def unexposed_risk(sp_sub):
+    pr = sp_sub.copy('F')
+    pr = invlogit(pr)
+    return 1-np.exp(-r*k*(1-pr)**k*trip_duration)
+    
+map_postproc = [pr, unexposed_risk]
+bins = np.array([0,.01,.1,.5,1])
 
 def binfn(arr, bins=bins):
     out = np.digitize(arr, bins)
