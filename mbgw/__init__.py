@@ -92,7 +92,13 @@ def incidence(sp_sub,
 def unexposed_risk(sp_sub):
     pr = sp_sub.copy('F')
     pr = invlogit(pr)
-    return 1-np.exp(-r*k*((1-pr)**(-1./k)-1)*trip_duration) 
+
+    ur = 1-np.exp(-r*k*((1-pr)**(-1./k)-1)*trip_duration) 
+
+    ur[np.where(ur==0)]=1e-10
+    ur[np.where(ur==1)]=1-(1e-10)
+
+    return ur
     
 map_postproc = [pr, unexposed_risk]
 bins = np.array([0,.01,.1,.5,1])
