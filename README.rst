@@ -1,5 +1,5 @@
-The generic afgh specialization module
-======================================
+The mbgw-clean specialization module
+====================================
 
 The purposes of this repository are to make our code available to people who would like to check or extend our work, and to synchronize it across multiple computers. Do not expect to be able to simply download and run anything here.
 
