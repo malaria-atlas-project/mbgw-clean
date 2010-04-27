@@ -185,6 +185,8 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
                                                 tlc=t_lim_corr, sf = sin_frac)
 
             sp_sub = pm.gp.GPSubmodel('sp_sub',M,C,logp_mesh)
+            sp_sub.f.trace=False
+            
             
             init_OK = True
         except pm.ZeroProbability, msg:
