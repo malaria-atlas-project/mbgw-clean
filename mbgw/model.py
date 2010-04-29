@@ -26,6 +26,7 @@ from agecorr import age_corr_likelihoods
 from mbgw import P_trace, S_trace, F_trace, a_pred
 from scipy import interpolate as interp
 import os, cPickle
+from pylab import csv2rec
 
 
 __all__ = ['make_model']
@@ -66,7 +67,9 @@ else:
     disttol = 0./6378.
     ttol = 0.
 
-def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1,with_stukel=with_stukel, chunk=chunk, disttol=disttol, ttol=ttol):
+def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=None,cpus=1,with_stukel=with_stukel, chunk=chunk, disttol=disttol, ttol=ttol):
+
+    ra = csv2rec(input_data)
 
     if np.any(pos+neg==0):
         where_zero = np.where(pos+neg==0)[0]
@@ -112,7 +115,7 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
     fi = np.array(fi)   
     logp_mesh = data_mesh[ui,:]
     
-    covariate_values_on_logp = dict([(k,covariate_values[k][ui]) for k in covariate_values.keys()])
+    # covariate_values_on_logp = dict([(k,covariate_values[k][ui]) for k in covariate_values.keys()])
         
     # =====================
     # = Create PyMC model =
@@ -179,8 +182,8 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
 
             # A Deterministic valued as a Covariance object. Uses covariance my_st, defined above. 
             @pm.deterministic
-            def C(amp=amp,scale=scale,inc=inc,ecc=ecc,scale_t=scale_t, t_lim_corr=t_lim_corr, sin_frac=sin_frac):
-                eval_fun = CovarianceWithCovariates(my_st, logp_mesh, covariate_values_on_logp, fac=1.e4)
+            def C(amp=amp,scale=scale,inc=inc,ecc=ecc,scale_t=scale_t, t_lim_corr=t_lim_corr, sin_frac=sin_frac, ra=ra):
+                eval_fun = CovarianceWithCovariates(my_st, input_data, covariate_keys, ui, fac=1.e4, ra=ra)
                 return pm.gp.FullRankCovariance(eval_fun, amp=amp, scale=scale, inc=inc, ecc=ecc,st=scale_t, sd=.5,
                                                 tlc=t_lim_corr, sf = sin_frac)
 

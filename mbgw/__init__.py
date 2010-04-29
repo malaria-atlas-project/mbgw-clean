@@ -112,6 +112,13 @@ def pr(data):
 
 validate_postproc=[pr]
 
+def survey_sim(sp_sub, survey_plan):
+    p = pm.invlogit(sp_sub)
+    n = survey_plan.n
+    return pm.rbinomial(n, p)
+
+simdata_postproc = [survey_sim]
+
 def mcmc_init(M):
     M.use_step_method(GPEvaluationGibbs, M.sp_sub, M.V, M.eps_p_f_list, ti=M.ti)
 
