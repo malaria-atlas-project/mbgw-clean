@@ -45,7 +45,10 @@ obs_labels = {'sp_sub': 'eps_p_f'}
 
 # Extra stuff for predictive ops.
 n_facs = 1000
-# postproc = invlogit
+
+non_cov_columns = {'lo_age': 'int', 'up_age': 'int', 'pos': 'float', 'neg': 'float'}
+
+# Postprocessing stuff for mapping
 
 def vivax(sp_sub):
     cmin, cmax = thread_partition_array(sp_sub)
@@ -103,6 +106,8 @@ extra_finalize = bin_finalize
 
 metadata_keys = ['ti','fi','ui','with_stukel','chunk','disttol','ttol']
 
+# Postprocessing stuff for validation
+
 def pr(data):
     obs = data.pos
     n = data.pos + data.neg
@@ -112,16 +117,21 @@ def pr(data):
 
 validate_postproc=[pr]
 
-def survey_sim(sp_sub, survey_plan):
+def survey_likelihood(x, survey_plan, data, i):
+    data_ = np.ones_like(x)*data[i]
+    return pm.binomial_like(data_, survey_plan.n[i], pm.invlogit(x))
+
+# Postprocessing stuff for survey evaluation
+
+def simdata_postproc(sp_sub, survey_plan):
     p = pm.invlogit(sp_sub)
     n = survey_plan.n
     return pm.rbinomial(n, p)
 
-simdata_postproc = [survey_sim]
-
+# Initialize step methods
 def mcmc_init(M):
     M.use_step_method(GPEvaluationGibbs, M.sp_sub, M.V, M.eps_p_f_list, ti=M.ti)
 
-non_cov_columns = {'lo_age': 'int', 'up_age': 'int', 'pos': 'float', 'neg': 'float'}
+
 
 from model import *
