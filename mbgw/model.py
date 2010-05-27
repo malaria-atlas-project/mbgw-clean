@@ -125,7 +125,8 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
             return pm.gp.Mean(pm.gp.zero_fn)
     
         # Inverse-gamma prior on nugget variance V.
-        V = pm.Exponential('V', .1, value=1.)
+        V_ = pm.Exponential('V_', .1, value=1.)
+        V = pm.Lambda('V',lambda V_=V_: V_+.1)
     
         vars_to_writeout = ['V', 'm_const', 't_coef']
         
