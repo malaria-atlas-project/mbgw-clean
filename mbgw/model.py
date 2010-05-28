@@ -30,7 +30,7 @@ import os, cPickle
 
 __all__ = ['make_model']
 
-continent = 'Asia'
+continent = 'Americas'
 with_stukel = False
 chunk = 2
 
@@ -177,6 +177,13 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
                     return -np.Inf
                 else:
                     return 0.
+
+            @pm.potential
+            def scale_constraint(sc=scale):
+                if sc>1.5:
+                    #print('scale was:',str(sc))
+                    return -np.Inf
+                else:
 
             # A Deterministic valued as a Covariance object. Uses covariance my_st, defined above. 
             @pm.deterministic
