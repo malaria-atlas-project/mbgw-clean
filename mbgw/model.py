@@ -184,6 +184,7 @@ def make_model(lon,lat,t,covariate_values,pos,neg,lo_age=None,up_age=None,cpus=1
                     #print('scale was:',str(sc))
                     return -np.Inf
                 else:
+                    return 0.
 
             # A Deterministic valued as a Covariance object. Uses covariance my_st, defined above. 
             @pm.deterministic
