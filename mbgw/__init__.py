@@ -130,7 +130,7 @@ def simdata_postproc(sp_sub, survey_plan):
 
 # Initialize step methods
 def mcmc_init(M):
-    M.use_step_method(GPEvaluationGibbs, M.sp_sub, M.V, M.eps_p_f_list, ti=M.ti)
+    M.use_step_method(GPEvaluationGibbs, M.sp_sub, M.V, M.eps_p_f, ti=M.ti)
 
 
 
