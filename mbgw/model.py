@@ -246,8 +246,9 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
         try:
             @pm.data
             @pm.stochastic(dtype=np.int)
-            def N_pos_now(value = pm.utils.round_array(pos[this_slice]), splrep = splreps[this_slice], eps_p_f = eps_p_f_now, a1=a1, a2=a2, rdt_factor=rdt_factor, ):
-                p_now = pm.flib.stukel_invlogit(eps_p_f, a1, a2)*rdt_factor
+            def N_pos_now(value = pm.utils.round_array(pos[this_slice]), splrep = splreps[this_slice], eps_p_f = eps_p_f_now, a1=a1, a2=a2, rdt_factor=rdt_factor, micro=micro[this_slice]):
+                rdt_factor_here = (True-micro) * rdt_factor
+                p_now = pm.flib.stukel_invlogit(eps_p_f, a1, a2) * rdt_factor_here
                 out = 0.
                 for i in xrange(len(value)):
                     out += interp.splev(p_now[i], splrep[i])
