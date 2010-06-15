@@ -67,7 +67,7 @@ else:
     disttol = 0./6378.
     ttol = 0.
 
-def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=None,cpus=1,with_stukel=with_stukel, chunk=chunk, disttol=disttol, ttol=ttol):
+def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=None,diagnostic=None,cpus=1,with_stukel=with_stukel, chunk=chunk, disttol=disttol, ttol=ttol):
 
     ra = csv2rec(input_data)
 
@@ -88,6 +88,9 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
         lo_age = 2.*np.ones(data_mesh.shape[0])
     if up_age is None:
         up_age = 10.*np.ones(data_mesh.shape[0])
+    if diagnostic is None:
+        diagnostic = np.array(['Microscopy']*data_mesh.shape[0])
+    micro = diagnostic=='Microscopy'
     
     # Find near spatiotemporal duplicates.
     ui = []
@@ -129,6 +132,9 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
     
         # Inverse-gamma prior on nugget variance V.
         V = pm.Exponential('V', .1, value=1.)
+    
+        log_rdt_factor = pm.Uninformative('log_rdt_factor',value=0)
+        rdt_factor = pm.Lambda('rdt_factor', lambda lrf=log_rdt_factor: np.exp(lrf))
     
         vars_to_writeout = ['V', 'm_const', 't_coef']
         
@@ -240,8 +246,8 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
         try:
             @pm.data
             @pm.stochastic(dtype=np.int)
-            def N_pos_now(value = pm.utils.round_array(pos[this_slice]), splrep = splreps[this_slice], eps_p_f = eps_p_f_now, a1=a1, a2=a2):
-                p_now = pm.flib.stukel_invlogit(eps_p_f, a1, a2)
+            def N_pos_now(value = pm.utils.round_array(pos[this_slice]), splrep = splreps[this_slice], eps_p_f = eps_p_f_now, a1=a1, a2=a2, rdt_factor=rdt_factor, ):
+                p_now = pm.flib.stukel_invlogit(eps_p_f, a1, a2)*rdt_factor
                 out = 0.
                 for i in xrange(len(value)):
                     out += interp.splev(p_now[i], splrep[i])

@@ -38,7 +38,10 @@ root = os.path.split(mbgw.__file__)[0]
 pm.gp.cov_funs.cov_utils.mod_search_path.append(root)
 
 def check_data(input):
-    pass
+    if diagnostic not in input.dtype.names:
+        raise TypeError, 'Dataset has no diagnostic column'
+    if np.any((input['diagnostic']!='RDT')+(input['diagnostic']!='Microscopy')):
+        raise TypeError, 'Dataset has diagnostic entries that are not RDT or Microscopy.'
     
 nugget_labels = {'sp_sub': 'V'}
 obs_labels = {'sp_sub': 'eps_p_f'}
@@ -46,7 +49,7 @@ obs_labels = {'sp_sub': 'eps_p_f'}
 # Extra stuff for predictive ops.
 n_facs = 1000
 
-non_cov_columns = {'lo_age': 'int', 'up_age': 'int', 'pos': 'float', 'neg': 'float'}
+non_cov_columns = {'lo_age': 'int', 'up_age': 'int', 'pos': 'float', 'neg': 'float', 'diagnostic': '|S10'}
 
 # Postprocessing stuff for mapping
 
