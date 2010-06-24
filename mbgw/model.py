@@ -49,8 +49,8 @@ As_amp_params = {'mu': .0535, 'tau': 1.79, 'alpha': 3.21}
 if continent == 'Americas':
     scale_params = Am_scale_params
     amp_params = Am_amp_params
-    disttol = 0/6378.
-    ttol = 0
+    disttol = 1./6378.
+    ttol = 1./12
 elif continent == 'Asia':
     scale_params = As_scale_params
     amp_params = As_amp_params    
