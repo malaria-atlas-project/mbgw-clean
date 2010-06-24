@@ -83,8 +83,27 @@ def incidence(sp_sub,
     out[np.where(out==0)]=1e-10
     out[np.where(out==1)]=1-(1e-10)
     return out
+
+# params for naive risk mapping
+r = .1/200
+k = 1./4.2
+trip_duration = 30  # in days
+
+def unexposed_risk(sp_sub):
+    pr = sp_sub.copy('F')
+    pr = invlogit(pr)
+
+    pr[np.where(pr==0)]=1e-10
+    pr[np.where(pr==1)]=1-(1e-10)
+
+    ur = 1-np.exp(-r*k*((1-pr)**(-1./k)-1)*trip_duration) 
+
+    ur[np.where(ur==0)]=1e-10
+    ur[np.where(ur==1)]=1-(1e-10)
+
+    return ur
     
-map_postproc = [pr, incidence]
+map_postproc = [pr, incidence, unexposed_risk]
 bins = np.array([0,.1,.5,1])
 
 def binfn(arr, bins=bins):
