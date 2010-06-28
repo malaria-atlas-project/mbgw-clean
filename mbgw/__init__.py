@@ -96,7 +96,12 @@ def unexposed_risk(sp_sub):
     pr[np.where(pr==0)]=1e-10
     pr[np.where(pr==1)]=1-(1e-10)
 
-    ur = 1-np.exp(-r*k*((1-pr)**(-1./k)-1)*trip_duration) 
+    gams = pm.rgamma(1./k,1./k,size=10000)
+
+    ur = pr*0
+    for g in gams:
+        ur += 1-np.exp(-r*k*((1-pr)**(-1./k)-1)*trip_duration*g)
+    ur /= len(gams)
 
     ur[np.where(ur==0)]=1e-10
     ur[np.where(ur==1)]=1-(1e-10)
