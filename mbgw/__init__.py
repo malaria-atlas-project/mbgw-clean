@@ -158,7 +158,30 @@ def mcmc_init(M):
     def isscalar(s):
         return (s.dtype != np.dtype('object')) and (np.alen(s.value)==1) and (s not in M.eps_p_f_list)
     scalar_stochastics = filter(isscalar, M.stochastics)
-    M.use_step_method(pm.gp.GPParentAdaptiveMetropolis, scalar_stochastics, delay=10000, interval=100)
+    
+    # The following two lines choose the 'AdaptiveMetropolis' step method (jumping strategy) for 
+    # the scalar variables: nugget, scale, partial sill etc. It tries to update all of the variables
+    # jointly, so each iteration takes much less time. 
+    #
+    # Comment them to accept the default, which is one-at-a-time Metropolis. This jumping strategy is
+    # much slower, and known to be worse in many cases; but has been performing reliably for small
+    # datasets.
+    # 
+    # The two parameters here, 'delay' and 'interval', control how the step method attempts to adapt its
+    # jumping strategy. It waits for 'delay' iterations of one-at-a-time updates before it even tries to
+    # start adapting. Subsequently, it tries to adapt every 'interval' iterations.
+    # 
+    # If any of the variables appear to not have reached their dense support before 'delay' iterations
+    # have elapsed, 'delay' must be increased. However, it's good to have 'delay' be as small as possible
+    # subject to that constraint.
+    #
+    # 'Interval' is the last parameter to fiddle; its effects can be hard to understand.
+    M.use_step_method(pm.gp.GPParentAdaptiveMetropolis, scalar_stochastics, delay=10000, interval=5000)
+    #
+    # The following line sets the size of jumps before the first adaptation. If the chain is 'flatlining'
+    # before 'delay' iterations have elapsed, it should be decreased. However, it should be as large as
+    # possible while still allowing many jumps to be accepted.
+    #
     M.step_method_dict[M.log_amp][0].proposal_sd *= .1
 
 
