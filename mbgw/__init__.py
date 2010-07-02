@@ -68,7 +68,7 @@ xplot = np.linspace(0.001,1,100)
 xplot_aug = np.concatenate(([0],xplot))
 def incidence(sp_sub, 
                 two_ten_facs=two_ten_factors,
-                p2b = BurdenPredictor('CSE_Asia_and_Americas_scale_0.6_model_exp.hdf5', N_year),
+                p2b = BurdenPredictor('Africa+_scale_0.6_model_exp.hdf5', N_year),
                 N_year = N_year):
     pr = sp_sub.copy('F')
     pr = invlogit(pr) * two_ten_facs[np.random.randint(len(two_ten_facs))]
@@ -108,8 +108,8 @@ def unexposed_risk(sp_sub):
 
     return ur
     
-map_postproc = [pr, incidence, unexposed_risk]
-bins = np.array([0,.1,.5,1])
+map_postproc = [pr, incidence]
+bins = np.array([0,.05,.4,1])
 
 def binfn(arr, bins=bins):
     out = np.digitize(arr, bins)
