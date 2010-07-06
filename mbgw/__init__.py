@@ -68,7 +68,7 @@ xplot = np.linspace(0.001,1,100)
 xplot_aug = np.concatenate(([0],xplot))
 def incidence(sp_sub, 
                 two_ten_facs=two_ten_factors,
-                p2b = BurdenPredictor('Africa+_scale_0.6_model_exp.hdf5', N_year),
+                p2b = BurdenPredictor('CSE_Asia_and_Americas_scale_0.6_model_exp.hdf5', N_year),
                 N_year = N_year):
     pr = sp_sub.copy('F')
     pr = invlogit(pr) * two_ten_facs[np.random.randint(len(two_ten_facs))]
@@ -182,7 +182,7 @@ def mcmc_init(M):
     # before 'delay' iterations have elapsed, it should be decreased. However, it should be as large as
     # possible while still allowing many jumps to be accepted.
     #
-    M.step_method_dict[M.log_amp][0].proposal_sd *= .1
+    M.step_method_dict[M.log_amp][0].proposal_sd *= 1
 
 
 from model import *
