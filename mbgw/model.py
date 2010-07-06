@@ -31,7 +31,7 @@ from pylab import csv2rec
 
 __all__ = ['make_model']
 
-continent = 'Americas'
+continent = 'Asia'
 with_stukel = False
 chunk = 2
 
