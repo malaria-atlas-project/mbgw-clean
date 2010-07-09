@@ -87,6 +87,7 @@ def incidence(sp_sub,
 # params for naive risk mapping
 r = .1/200
 k = 1./4.2
+ndraws = 100 # from the heterogenous biting parameter CAREFUL! this can bump up mapping time considerably if doing large maps
 trip_duration = 30  # in days
 
 def unexposed_risk(sp_sub):
@@ -96,7 +97,7 @@ def unexposed_risk(sp_sub):
     pr[np.where(pr==0)]=1e-10
     pr[np.where(pr==1)]=1-(1e-10)
 
-    gams = pm.rgamma(1./k,1./k,size=10000)
+    gams = pm.rgamma(1./k,1./k,size=ndraws)
 
     ur = pr*0
     for g in gams:
@@ -108,7 +109,7 @@ def unexposed_risk(sp_sub):
 
     return ur
     
-map_postproc = [pr, incidence, unexposed_risk]
+map_postproc = [pr, unexposed_risk]
 bins = np.array([0,.01,.1,.5,1])
 
 def binfn(arr, bins=bins):
