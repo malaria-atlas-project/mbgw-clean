@@ -71,7 +71,7 @@ xplot = np.linspace(0.001,1,100)
 xplot_aug = np.concatenate(([0],xplot))
 def incidence(sp_sub, 
                 two_ten_facs=two_ten_factors,
-                p2b = BurdenPredictor('CSE_Asia_and_Americas_scale_0.6_model_exp.hdf5', N_year),
+                p2b = BurdenPredictor('Africa+_scale_0.6_model_exp.hdf5', N_year),
                 N_year = N_year):
     pr = sp_sub.copy('F')
     pr = invlogit(pr) * two_ten_facs[np.random.randint(len(two_ten_facs))]
@@ -90,6 +90,7 @@ def incidence(sp_sub,
 # params for naive risk mapping
 r = .1/200
 k = 1./4.2
+ndraws = 100 # from the heterogenous biting parameter CAREFUL! this can bump up mapping time considerably if doing large maps
 trip_duration = 30  # in days
 
 def unexposed_risk(sp_sub):
@@ -99,15 +100,20 @@ def unexposed_risk(sp_sub):
     pr[np.where(pr==0)]=1e-10
     pr[np.where(pr==1)]=1-(1e-10)
 
-    ur = 1-np.exp(-r*k*((1-pr)**(-1./k)-1)*trip_duration) 
+    gams = pm.rgamma(1./k,1./k,size=ndraws)
+
+    ur = pr*0
+    for g in gams:
+        ur += 1-np.exp(-r*k*((1-pr)**(-1./k)-1)*trip_duration*g)
+    ur /= len(gams)
 
     ur[np.where(ur==0)]=1e-10
     ur[np.where(ur==1)]=1-(1e-10)
 
     return ur
     
-map_postproc = [pr, incidence, unexposed_risk]
-bins = np.array([0,.1,.5,1])
+map_postproc = [pr, unexposed_risk]
+bins = np.array([0,.01,.1,.5,1])
 
 def binfn(arr, bins=bins):
     out = np.digitize(arr, bins)
@@ -156,7 +162,30 @@ def mcmc_init(M):
     def isscalar(s):
         return (s.dtype != np.dtype('object')) and (np.alen(s.value)==1) and (s not in M.eps_p_f_list)
     scalar_stochastics = filter(isscalar, M.stochastics)
-    M.use_step_method(pm.gp.GPParentAdaptiveMetropolis, scalar_stochastics, delay=10000, interval=100)
+    
+    # The following two lines choose the 'AdaptiveMetropolis' step method (jumping strategy) for 
+    # the scalar variables: nugget, scale, partial sill etc. It tries to update all of the variables
+    # jointly, so each iteration takes much less time. 
+    #
+    # Comment them to accept the default, which is one-at-a-time Metropolis. This jumping strategy is
+    # much slower, and known to be worse in many cases; but has been performing reliably for small
+    # datasets.
+    # 
+    # The two parameters here, 'delay' and 'interval', control how the step method attempts to adapt its
+    # jumping strategy. It waits for 'delay' iterations of one-at-a-time updates before it even tries to
+    # start adapting. Subsequently, it tries to adapt every 'interval' iterations.
+    # 
+    # If any of the variables appear to not have reached their dense support before 'delay' iterations
+    # have elapsed, 'delay' must be increased. However, it's good to have 'delay' be as small as possible
+    # subject to that constraint.
+    #
+    # 'Interval' is the last parameter to fiddle; its effects can be hard to understand.
+    M.use_step_method(pm.gp.GPParentAdaptiveMetropolis, scalar_stochastics, delay=10000, interval=5000)
+    #
+    # The following line sets the size of jumps before the first adaptation. If the chain is 'flatlining'
+    # before 'delay' iterations have elapsed, it should be decreased. However, it should be as large as
+    # possible while still allowing many jumps to be accepted.
+    #
     M.step_method_dict[M.log_amp][0].proposal_sd *= .1
 
 

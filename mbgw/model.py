@@ -31,7 +31,7 @@ from pylab import csv2rec
 
 __all__ = ['make_model']
 
-continent = 'Asia'
+continent = 'Africa'
 with_stukel = False
 chunk = 2
 
@@ -131,7 +131,9 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
             return pm.gp.Mean(pm.gp.zero_fn)
     
         # Inverse-gamma prior on nugget variance V.
-        V = pm.Exponential('V', .1, value=1.)
+        tau = pm.Gamma('tau', alpha=3, beta=3/.25, value=5)
+        V = pm.Lambda('V', lambda tau=tau:1./tau)
+        # V = pm.Exponential('V', .1, value=1.)
     
         log_rdt_factor = pm.Uninformative('log_rdt_factor',value=0)
         rdt_factor = pm.Lambda('rdt_factor', lambda lrf=log_rdt_factor: np.exp(lrf))
