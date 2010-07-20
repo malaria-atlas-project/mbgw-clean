@@ -38,7 +38,7 @@ root = os.path.split(mbgw.__file__)[0]
 pm.gp.cov_funs.cov_utils.mod_search_path.append(root)
 
 def check_data(input):
-    if diagnostic not in input.dtype.names:
+    if 'diagnostic' not in input.dtype.names:
         raise TypeError, 'Dataset has no diagnostic column'
     if np.any((input['diagnostic']!='RDT')+(input['diagnostic']!='Microscopy')):
         raise TypeError, 'Dataset has diagnostic entries that are not RDT or Microscopy.'
