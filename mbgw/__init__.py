@@ -14,7 +14,7 @@ import agecorr
 from st_cov_fun import *
 from pr_incidence import BurdenPredictor
 
-a_pred = a_pred = np.hstack((np.arange(15), np.arange(15,75,5), [100]))
+a_pred = np.hstack((np.arange(15), np.arange(15,75,5), [100]))
 age_pr_file = tb.openFile('pr-falciparum')
 age_dist_file = tb.openFile('age-dist-falciparum')
 
@@ -26,7 +26,7 @@ F_trace = age_pr_trace.F_pred[:]
 age_pr_file.close()
 age_dist_file.close()
 
-two_ten_factors = agecorr.two_ten_factors(10000, P_trace, S_trace, F_trace)
+two_ten_factors = agecorr.age_corr_factor_from_limits(2, 10, 10000, a_pred, P_trace, S_trace, F_trace)
 
 from generic_mbg import FieldStepper, invlogit, histogram_reduce
 from pymc import thread_partition_array
