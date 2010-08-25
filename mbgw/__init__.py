@@ -101,8 +101,9 @@ def unexposed_risk_(f):
         gams = pm.rgamma(1./k,1./k,size=ndraws)
 
         ur = pr*0
+        fac = -r*k*((1-pr)**(-1./k)-1)*trip_duration*f
         for g in gams:
-            ur += 1-np.exp(-r*k*((1-pr)**(-1./k)-1)*trip_duration*g)
+            ur += 1-np.exp(fac*g)
         ur /= len(gams)
 
         ur[np.where(ur==0)]=1e-10
