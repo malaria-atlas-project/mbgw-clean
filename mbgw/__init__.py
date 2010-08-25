@@ -90,26 +90,30 @@ k = 1./4.2
 ndraws = 100 # from the heterogenous biting parameter CAREFUL! this can bump up mapping time considerably if doing large maps
 trip_duration = 30  # in days
 
-def unexposed_risk(sp_sub):
-    pr = sp_sub.copy('F')
-    pr = invlogit(pr)
+def unexposed_risk_(f):
+    def unexposed_risk(sp_sub, f=f):
+        pr = sp_sub.copy('F')
+        pr = invlogit(pr)
 
-    pr[np.where(pr==0)]=1e-10
-    pr[np.where(pr==1)]=1-(1e-10)
+        pr[np.where(pr==0)]=1e-10
+        pr[np.where(pr==1)]=1-(1e-10)
 
-    gams = pm.rgamma(1./k,1./k,size=ndraws)
+        gams = pm.rgamma(1./k,1./k,size=ndraws)
 
-    ur = pr*0
-    for g in gams:
-        ur += 1-np.exp(-r*k*((1-pr)**(-1./k)-1)*trip_duration*g)
-    ur /= len(gams)
+        ur = pr*0
+        for g in gams:
+            ur += 1-np.exp(-r*k*((1-pr)**(-1./k)-1)*trip_duration*g)
+        ur /= len(gams)
 
-    ur[np.where(ur==0)]=1e-10
-    ur[np.where(ur==1)]=1-(1e-10)
+        ur[np.where(ur==0)]=1e-10
+        ur[np.where(ur==1)]=1-(1e-10)
 
-    return ur
+        return ur
+    unexposed_risk.__name__ = 'unexposed_risk_%f'%f
+    return unexposed_risk
     
-map_postproc = [pr, unexposed_risk]
+map_postproc = [pr]+map(unexposed_risk_, [.1, .25, .5, 1.])
+
 bins = np.array([0,.01,.1,.5,1])
 
 def binfn(arr, bins=bins):
