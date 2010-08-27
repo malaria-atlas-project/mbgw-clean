@@ -113,7 +113,7 @@ def unexposed_risk_(f):
     unexposed_risk.__name__ = 'unexposed_risk_%f'%f
     return unexposed_risk
     
-map_postproc = [pr]+map(unexposed_risk_, [.1, .25, .5, 1.])
+map_postproc = [pr]+map(unexposed_risk_, [.01, .05, .1, .5, 1.])
 
 bins = np.array([0,.01,.1,.5,1])
 
