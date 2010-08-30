@@ -93,7 +93,7 @@ trip_duration = 30  # in days
 def unexposed_risk_(f):
     def unexposed_risk(sp_sub, f=f):
         pr = sp_sub.copy('F')
-        pr = invlogit(pr)
+        pr = invlogit(pr)*two_ten_facs[np.random.randint(len(two_ten_facs))]
 
         pr[np.where(pr==0)]=1e-10
         pr[np.where(pr==1)]=1-(1e-10)
