@@ -91,7 +91,7 @@ ndraws = 100 # from the heterogenous biting parameter CAREFUL! this can bump up 
 trip_duration = 30  # in days
 
 def unexposed_risk_(f):
-    def unexposed_risk(sp_sub, f=f):
+    def unexposed_risk(sp_sub, f=f, two_ten_facs=two_ten_facs):
         pr = sp_sub.copy('F')
         pr = invlogit(pr)*two_ten_facs[np.random.randint(len(two_ten_facs))]
 
