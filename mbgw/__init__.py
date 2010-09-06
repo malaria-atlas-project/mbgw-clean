@@ -105,11 +105,12 @@ def unexposed_risk_(f):
         for g in gams:
             ur += 1-np.exp(fac*g)
         ur /= len(gams)
-
+        
         ur[np.where(ur==0)]=1e-10
         ur[np.where(ur==1)]=1-(1e-10)
 
         return ur
+        
     unexposed_risk.__name__ = 'unexposed_risk_%f'%f
     return unexposed_risk
     
