@@ -28,7 +28,7 @@ age_dist_file.close()
 
 two_ten_factors = agecorr.age_corr_factors_from_limits(2, 10, 10000, a_pred, P_trace, S_trace, F_trace)
 
-from generic_mbg import FieldStepper, invlogit, histogram_reduce
+from generic_mbg import invlogit, histogram_reduce
 from pymc import thread_partition_array
 from pymc.gp import GPEvaluationGibbs
 import pymc as pm
