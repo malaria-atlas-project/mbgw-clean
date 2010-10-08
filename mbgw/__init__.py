@@ -114,25 +114,36 @@ def unexposed_risk_(f):
     unexposed_risk.__name__ = 'unexposed_risk_%f'%f
     return unexposed_risk
     
-map_postproc = [pr]+map(unexposed_risk_, [.001, .01, .1, 1.])
+#map_postproc = [pr]+map(unexposed_risk_, [.001, .01, .1, 1.])
+map_postproc=[pr]
 
-bins = np.array([0,.01,.1,.5,1])
+bins_list = [np.array([0,.1,.5,.75,1]),np.array([0,.05,.4,1]),np.array([0,.01,.05,.4,1])]
 
-def binfn(arr, bins=bins):
-    out = np.digitize(arr, bins)
+bin_reduce_list=[]
+for i in xrange(len(bins_list)):
+
+    def binfn(arr, bins=bins_list[i]):
+        out = np.digitize(arr, bins)
+        return out
+
+    bin_reduce_list = bin_reduce_list+[histogram_reduce(bins_list[i],binfn)]
+
+def bin_finalize(products, n, bins_list=bins_list, bin_reduce_list=bin_reduce_list):
+
+    nbins=len(bins_list)
+    out={}
+    for j in xrange(nbins):
+        bins=bins_list[j]
+        bin_reduce=bin_reduce_list[j]
+
+        for i in xrange(len(bins)-1):
+            out['b%i-p-class-%i-%i'%(j,bins[i]*100,bins[i+1]*100)] = products[bin_reduce][:,i+1].astype('float')/n
+            out['b%i-most-likely-class'%(j)] = np.argmax(products[bin_reduce], axis=1)
+            out['b%i-p-most-likely-class'%(j)] = np.max(products[bin_reduce], axis=1).astype('float') / n
+
     return out
 
-bin_reduce = histogram_reduce(bins,binfn)
-
-def bin_finalize(products, n, bins=bins, bin_reduce=bin_reduce):
-    out = {}
-    for i in xrange(len(bins)-1):
-        out['p-class-%i-%i'%(bins[i]*100,bins[i+1]*100)] = products[bin_reduce][:,i+1].astype('float')/n
-    out['most-likely-class'] = np.argmax(products[bin_reduce], axis=1)
-    out['p-most-likely-class'] = np.max(products[bin_reduce], axis=1).astype('float') / n
-    return out
-        
-extra_reduce_fns = [bin_reduce]    
+extra_reduce_fns = bin_reduce_list
 extra_finalize = bin_finalize
 
 metadata_keys = ['ti','fi','ui','with_stukel','chunk','disttol','ttol']
