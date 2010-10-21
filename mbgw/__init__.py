@@ -156,7 +156,7 @@ def pr(data, a_pred=a_pred, P_trace=P_trace, S_trace=S_trace, F_trace=F_trace):
     facs = agecorr.age_corr_factors(data.lo_age, data.up_age, 10000, a_pred, P_trace, S_trace, F_trace).T
     def f(sp_sub, facs=facs, n=n):
         p=pm.flib.invlogit(sp_sub)*facs[np.random.randint(10000)]
-        return np.random.binomial(n,p).astype('float')/n
+        return np.random.binomial(n.astype('int'),p).astype('float')/n
     return obs, n, f
 
 validate_postproc=[pr]
