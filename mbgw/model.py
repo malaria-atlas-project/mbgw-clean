@@ -83,39 +83,7 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
     # = Preprocess data, uniquify =
     # =============================
     
-    data_mesh = combine_st_inputs(lon,lat,t)
-    if lo_age is None:
-        lo_age = 2.*np.ones(data_mesh.shape[0])
-    if up_age is None:
-        up_age = 10.*np.ones(data_mesh.shape[0])
-    
-    # Find near spatiotemporal duplicates.
-    ui = []
-    fi = []
-    ti = []
-    dx = np.empty(1)
-    for i in xrange(data_mesh.shape[0]):
-        match=False
-        for j in xrange(len(ui)):
-            pm.gp.geo_rad(dx, data_mesh[i,:2].reshape((1,2)), data_mesh[ui[j],:2].reshape((1,2)))
-            dt = abs(t[ui[j]]-t[i])
-            
-            if dx[0]<disttol and dt<ttol:
-                match=True
-                fi.append(j)
-                ti[j].append(i)
-                break
-
-        if not match:
-            fi.append(len(ui))            
-            ui.append(i)
-            ti.append([i])
-    ui=np.array(ui)
-    ti = [np.array(tii) for tii in ti]
-    fi = np.array(fi)   
-    logp_mesh = data_mesh[ui,:]
-    
-    # covariate_values_on_logp = dict([(k,covariate_values[k][ui]) for k in covariate_values.keys()])
+    data_mesh, logp_mesh, fi, ui, ti = uniquify_tol(disttol, ttol, lon, lat, t)
         
     # =====================
     # = Create PyMC model =
@@ -186,9 +154,11 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
             @pm.deterministic
             def C(amp=amp,scale=scale,inc=inc,ecc=ecc,scale_t=scale_t, t_lim_corr=t_lim_corr, sin_frac=sin_frac, ra=ra):
                 eval_fun = CovarianceWithCovariates(my_st, input_data, covariate_keys, ui, fac=1.e4, ra=ra)
-                return pm.gp.FullRankCovariance(eval_fun, amp=amp, scale=scale, inc=inc, ecc=ecc,st=scale_t, sd=.5,
+                return pm.gp.FullRankCovariance(eval_fun, amp=amp, scale=scale, inc=inc, ecc=ecc, st=scale_t, sd=.5,
                                                 tlc=t_lim_corr, sf = sin_frac)
-
+            
+            # assert(np.all(C.value.eval_fun.meshes[0]==logp_mesh[:,:2]))
+                                                
             sp_sub = pm.gp.GPSubmodel('sp_sub',M,C,logp_mesh)
             
             init_OK = True
