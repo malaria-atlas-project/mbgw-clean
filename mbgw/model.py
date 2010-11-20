@@ -33,7 +33,7 @@ __all__ = ['make_model']
 
 continent = 'Africa'
 with_stukel = False
-chunk = 2
+chunk = 20
 
 # Prior parameters specified by Simon, Pete and Andy
 Af_scale_params = {'mu': -2.54, 'tau': 1.42, 'alpha': -.015}
@@ -184,7 +184,7 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
         file(splrep_fname,'w').write(cPickle.dumps(splreps))
     for i in xrange(len(splreps)):
         splreps[i] = list(splreps[i])
-
+    
     # Don't worry, these are just reasonable initial values...
     if with_stukel:
         val_now = pm.stukel_logit((pos+1.)/(pos+neg+2.), a1.value, a2.value)
@@ -199,7 +199,7 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
     for i in xrange(0,data_mesh.shape[0] / chunk + additional_index):
         
         this_slice = slice(chunk*i, min((i+1)*chunk, data_mesh.shape[0]))
-
+    
         # epsilon plus f, given f.
         @pm.stochastic(trace=False, dtype=np.float)
         def eps_p_f_now(value=val_now[this_slice], f=sp_sub.f_eval, V=V, sl=this_slice):
@@ -220,7 +220,7 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
                 return out
         except ValueError:
             raise ValueError, 'Log-likelihood is nan at chunk %i'%i
-
+    
     # Combine the eps_p_f values. This is stupid, I should have just used a Container.
     # I guess this makes it easier to keep traces.
     @pm.deterministic
@@ -229,7 +229,7 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
         for i in xrange(len(eps_p_f_list)):
             out[chunk*i:min((i+1)*chunk, data_mesh.shape[0])] = eps_p_f_list[i]
         return out
-
+    
 
     out = locals()
 

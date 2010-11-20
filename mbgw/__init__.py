@@ -201,7 +201,7 @@ def mcmc_init(M):
     # The following line sets the size of jumps before the first adaptation. If the chain is 'flatlining'
     # before 'delay' iterations have elapsed, it should be decreased. However, it should be as large as
     # possible while still allowing many jumps to be accepted.
-    #
+    
     M.step_method_dict[M.log_amp][0].proposal_sd *= .1
 
 
