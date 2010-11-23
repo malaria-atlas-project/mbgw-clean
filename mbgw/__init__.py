@@ -117,7 +117,8 @@ def unexposed_risk_(f):
 #map_postproc = [pr]+map(unexposed_risk_, [.001, .01, .1, 1.])
 map_postproc=[pr]
 
-bins_list = [np.array([0,.1,.5,.75,1]),np.array([0,.05,.4,1]),np.array([0,.01,.05,.4,1])]
+# bins_list = [np.array([0,.1,.5,.75,1]),np.array([0,.05,.4,1]),np.array([0,.01,.05,.4,1])]
+bins_list = [np.array([0,.01,1.])]
 
 bin_reduce_list=[]
 for i in xrange(len(bins_list)):
