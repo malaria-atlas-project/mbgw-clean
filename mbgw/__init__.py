@@ -13,6 +13,8 @@ import numpy as np
 import agecorr
 from st_cov_fun import *
 from pr_incidence import BurdenPredictor
+import flikelihood
+from scipy.special import gammaln
 
 a_pred = np.hstack((np.arange(15), np.arange(15,75,5), [100]))
 age_pr_file = tb.openFile('pr-falciparum')
@@ -162,16 +164,27 @@ def pr(data, a_pred=a_pred, P_trace=P_trace, S_trace=S_trace, F_trace=F_trace):
 
 validate_postproc=[pr]
 
-def survey_likelihood(x, survey_plan, data, i):
-    data_ = np.ones_like(x)*data[i]
-    return pm.binomial_like(data_, survey_plan.n[i], pm.invlogit(x))
-
-# Postprocessing stuff for survey evaluation
-
-def simdata_postproc(sp_sub, survey_plan):
-    p = pm.invlogit(sp_sub)
-    n = survey_plan.n
+def simdata_postproc(sp_sub, survey_plan, a_pred=a_pred, P_trace=P_trace, S_trace=S_trace, F_trace=F_trace):
+    """
+    This function should take a value for the Gaussian random field in the submodel 
+    sp_sub, evaluated at the survey plan locations, and return a simulated dataset.
+    """
+    facs = agecorr.age_corr_factors(survey_plan.lo_age, survey_plan.up_age, 1, a_pred, P_trace, S_trace, F_trace).ravel()
+    p = pm.invlogit(sp_sub)#*facs
+    n = survey_plan.n.astype('int')
     return pm.rbinomial(n, p)
+    
+def survey_likelihood(sp_sub, survey_plan, data, i):
+    """
+    This function should return the log of the likelihood of data[i]
+    given row i of survey_plan and each element of sp_sub. It must
+    be normalized, because the evidence will be used to avoid difficult
+    computations at low importance weights.
+    """
+    # The function 'binomial' is implemented in the Fortran extension flikelihood.f for speed.
+    l = flikelihood.binomial(data[i], survey_plan.n[i], sp_sub)
+    # Add the normalizing constant and return.
+    return l + gammaln(survey_plan.n[i]+1)-gammaln(data[i]+1)-gammaln(survey_plan.n[i]-data[i]+1)
 
 # Initialize step methods
 def mcmc_init(M):
