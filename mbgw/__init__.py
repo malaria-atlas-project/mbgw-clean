@@ -210,13 +210,13 @@ def mcmc_init(M):
     # subject to that constraint.
     #
     # 'Interval' is the last parameter to fiddle; its effects can be hard to understand.
-    M.use_step_method(pm.gp.GPParentAdaptiveMetropolis, scalar_stochastics, delay=50000, interval=500)
+    M.use_step_method(pm.gp.GPParentAdaptiveMetropolis, scalar_stochastics, delay=50000, interval=5000)
     #
     # The following line sets the size of jumps before the first adaptation. If the chain is 'flatlining'
     # before 'delay' iterations have elapsed, it should be decreased. However, it should be as large as
     # possible while still allowing many jumps to be accepted.
     
-    M.step_method_dict[M.log_amp][0].proposal_sd *= .1
+    M.step_method_dict[M.log_amp][0].proposal_sd *= 1
 
 
 from model import *
