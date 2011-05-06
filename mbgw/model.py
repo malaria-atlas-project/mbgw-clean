@@ -84,9 +84,8 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
     # =============================
     
     data_mesh, logp_mesh, fi, ui, ti = uniquify_tol(disttol, ttol, lon, lat, t)
-    
-    from IPython.Debugger import Pdb
-    Pdb(color_scheme='Linux').set_trace() 
+    print("Total data points = ",+str(np.shape(data_mesh)[0]))
+    print("Uniquified data points = ",+str(np.shape(logp_mesh)[0]))
         
     # =====================
     # = Create PyMC model =
