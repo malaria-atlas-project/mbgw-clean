@@ -6,9 +6,9 @@ The purposes of this repository are to make our code available to people who wou
 License
 -------
 
-Copyright (c) 2010 Pete Gething, Anand Patil. All code in this repository is licensed under the GPL, see LICENSE in this directory.
+Copyright (c) 2010 Anand Patil, Pete Gething. All code in this repository is licensed under the GPL, see LICENSE in this directory.
 
 Authors
 -------
 
-Pete Gething, Anand Patil
+Anand Patil, Pete Gething
