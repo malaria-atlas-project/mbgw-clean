@@ -12,7 +12,6 @@ import tables as tb
 import numpy as np
 import agecorr
 from st_cov_fun import *
-from pr_incidence import BurdenPredictor
 import flikelihood
 from scipy.special import gammaln
 
@@ -52,75 +51,19 @@ non_cov_columns = {'lo_age': 'int', 'up_age': 'int', 'pos': 'float', 'neg': 'flo
 
 # Postprocessing stuff for mapping
 
-def vivax(sp_sub):
-    cmin, cmax = thread_partition_array(sp_sub)
-    out = sp_sub_b.copy('F')     
-    ttf = two_ten_factors[np.random.randint(len(two_ten_factors))]
-    
-    pm.map_noreturn(vivax_postproc, [(out, sp_sub_0, sp_sub_v, p1, ttf, cmin[i], cmax[i]) for i in xrange(len(cmax))])
-    return out
-
 def pr(sp_sub, two_ten_facs=two_ten_factors):
     pr = sp_sub.copy('F')
     pr = invlogit(pr) * two_ten_facs[np.random.randint(len(two_ten_facs))]
     return pr
 
-N_year = 1./12
-xplot = np.linspace(0.001,1,100)
-xplot_aug = np.concatenate(([0],xplot))
-def incidence(sp_sub, 
-                two_ten_facs=two_ten_factors,
-                p2b = BurdenPredictor('Africa+_scale_0.6_model_exp.hdf5', N_year),
-                N_year = N_year):
-    pr = sp_sub.copy('F')
-    pr = invlogit(pr) * two_ten_facs[np.random.randint(len(two_ten_facs))]
-    i = np.random.randint(len(p2b.f))
-    mu = p2b.f[i](pr)
-    
-    # Uncomment and draw a negative binomial variate to get incidence over a finite time horizon.
-    r = (p2b.r_int[i] + p2b.r_lin[i] * pr + p2b.r_quad[i] * pr**2)
-    ar = pm.rgamma(beta=r/mu, alpha=r*N_year)
-
-    out = (1-np.exp(-ar))
-    out[np.where(out==0)]=1e-10
-    out[np.where(out==1)]=1-(1e-10)
-    return out
-
-# params for naive risk mapping
-r = .1/200
-k = 1./4.2
-ndraws = 100 # from the heterogenous biting parameter CAREFUL! this can bump up mapping time considerably if doing large maps
-trip_duration = 30  # in days
-
-def unexposed_risk_(f):
-    def unexposed_risk(sp_sub, f=f, two_ten_facs=two_ten_factors):
-        pr = sp_sub.copy('F')
-        pr = invlogit(pr)*two_ten_facs[np.random.randint(len(two_ten_facs))]
-
-        pr[np.where(pr==0)]=1e-10
-        pr[np.where(pr==1)]=1-(1e-10)
-
-        gams = pm.rgamma(1./k,1./k,size=ndraws)
-
-        ur = pr*0
-        fac = -r*k*((1-pr)**(-1./k)-1)*trip_duration*f
-        for g in gams:
-            ur += 1-np.exp(fac*g)
-        ur /= len(gams)
-        
-        ur[np.where(ur==0)]=1e-10
-        ur[np.where(ur==1)]=1-(1e-10)
-
-        return ur
-        
-    unexposed_risk.__name__ = 'unexposed_risk_%f'%f
-    return unexposed_risk
-    
-#map_postproc = [pr]+map(unexposed_risk_, [.001, .01, .1, 1.])
 map_postproc=[pr]
 
-# bins_list = [np.array([0,.1,.5,.75,1]),np.array([0,.05,.4,1]),np.array([0,.01,.05,.4,1])]
-bins_list = [np.array([0,.01,1.])]
+
+
+
+
+ bins_list = [np.array([0,.1,.5,.75,1]),np.array([0,.05,.4,1])]
+#bins_list = [np.array([0,.01,1.])]
 
 bin_reduce_list=[]
 for i in xrange(len(bins_list)):
@@ -149,7 +92,7 @@ def bin_finalize(products, n, bins_list=bins_list, bin_reduce_list=bin_reduce_li
 extra_reduce_fns = bin_reduce_list
 extra_finalize = bin_finalize
 
-metadata_keys = ['ti','fi','ui','with_stukel','chunk','disttol','ttol']
+metadata_keys = ['ti','fi','ui','chunk','disttol','ttol']
 
 # Postprocessing stuff for validation
 
@@ -164,31 +107,9 @@ def pr(data, a_pred=a_pred, P_trace=P_trace, S_trace=S_trace, F_trace=F_trace):
 
 validate_postproc=[pr]
 
-def simdata_postproc(sp_sub, survey_plan, a_pred=a_pred, P_trace=P_trace, S_trace=S_trace, F_trace=F_trace):
-    """
-    This function should take a value for the Gaussian random field in the submodel 
-    sp_sub, evaluated at the survey plan locations, and return a simulated dataset.
-    """
-    facs = agecorr.age_corr_factors(survey_plan.lo_age, survey_plan.up_age, 1, a_pred, P_trace, S_trace, F_trace).ravel()
-    p = pm.invlogit(sp_sub)#*facs
-    n = survey_plan.n.astype('int')
-    return pm.rbinomial(n, p)
-    
-def survey_likelihood(sp_sub, survey_plan, data, i):
-    """
-    This function should return the log of the likelihood of data[i]
-    given row i of survey_plan and each element of sp_sub. It must
-    be normalized, because the evidence will be used to avoid difficult
-    computations at low importance weights.
-    """
-    # The function 'binomial' is implemented in the Fortran extension flikelihood.f for speed.
-    l = flikelihood.binomial(data[i], survey_plan.n[i], sp_sub)
-    # Add the normalizing constant and return.
-    return l + gammaln(survey_plan.n[i]+1)-gammaln(data[i]+1)-gammaln(survey_plan.n[i]-data[i]+1)
-
 # Initialize step methods
 def mcmc_init(M):
-    M.use_step_method(GPEvaluationGibbs, M.sp_sub, M.V, M.eps_p_f, ti=M.ti)
+    M.use_step_method(GPEvaluationGibbs, M.sp_sub, M.V, M.eps_p_f_list, ti=M.ti)
     def isscalar(s):
         return (s.dtype != np.dtype('object')) and (np.alen(s.value)==1) and (s not in M.eps_p_f_list)
     scalar_stochastics = filter(isscalar, M.stochastics)
@@ -210,7 +131,7 @@ def mcmc_init(M):
     # subject to that constraint.
     #
     # 'Interval' is the last parameter to fiddle; its effects can be hard to understand.
-    M.use_step_method(pm.gp.GPParentAdaptiveMetropolis, scalar_stochastics, delay=50000, interval=500)
+    M.use_step_method(pm.gp.GPParentAdaptiveMetropolis, scalar_stochastics, delay=5000, interval=500)
     #
     # The following line sets the size of jumps before the first adaptation. If the chain is 'flatlining'
     # before 'delay' iterations have elapsed, it should be decreased. However, it should be as large as
