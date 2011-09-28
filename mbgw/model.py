@@ -67,7 +67,8 @@ else:
     disttol = 0./6378.
     ttol = 0.
 
-def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=None,cpus=1,with_stukel=with_stukel, chunk=chunk, disttol=disttol, ttol=ttol):
+def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age,up_age,chunk=chunk, disttol=disttol, ttol=ttol):
+
 
     ra = csv2rec(input_data)
 
@@ -91,16 +92,14 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
     
     init_OK = False
     while not init_OK:
-        @pm.deterministic()
+        @pm.deterministic(trace=False)
         def M():
             return pm.gp.Mean(pm.gp.zero_fn)
     
         # Inverse-gamma prior on nugget variance V.
         tau = pm.Gamma('tau', alpha=3, beta=3/.25, value=5)
         V = pm.Lambda('V', lambda tau=tau:1./tau)
-        # V = pm.Exponential('V', .1, value=1.)
-    
-        vars_to_writeout = ['V', 'm_const', 't_coef']
+        #V = pm.Exponential('V', .1, value=1.)
         
         # Lock down parameters of Stukel's link function to obtain standard logit.
         # These can be freed by removing 'observed' flags, but mixing gets much worse.
@@ -136,8 +135,6 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
 
         # # Uniform prior on sinusoidal fraction in temporal variogram
         sin_frac = pm.Uniform('sin_frac',0,1,value=.01)
-        
-        vars_to_writeout.extend(['inc','ecc','amp','scale','scale_t','t_lim_corr','sin_frac'])
     
         # Create covariance and MV-normal F if model is spatial.   
         try:
@@ -151,7 +148,7 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
                     return 0.
 
             # A Deterministic valued as a Covariance object. Uses covariance my_st, defined above. 
-            @pm.deterministic
+            @pm.deterministic(trace=False)
             def C(amp=amp,scale=scale,inc=inc,ecc=ecc,scale_t=scale_t, t_lim_corr=t_lim_corr, sin_frac=sin_frac, ra=ra):
                 eval_fun = CovarianceWithCovariates(my_st, input_data, covariate_keys, ui, fac=1.e4, ra=ra)
                 return pm.gp.FullRankCovariance(eval_fun, amp=amp, scale=scale, inc=inc, ecc=ecc, st=scale_t, sd=.5,
@@ -159,7 +156,7 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
             
             # assert(np.all(C.value.eval_fun.meshes[0]==logp_mesh[:,:2]))
                                                 
-            sp_sub = pm.gp.GPSubmodel('sp_sub',M,C,logp_mesh)
+            sp_sub = pm.gp.GPSubmodel('sp_sub',M,C,logp_mesh,tally_f=False)
             
             init_OK = True
         except pm.ZeroProbability, msg:
@@ -214,6 +211,7 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
             @pm.stochastic(dtype=np.int)
             def N_pos_now(value = pm.utils.round_array(pos[this_slice]), splrep = splreps[this_slice], eps_p_f = eps_p_f_now, a1=a1, a2=a2):
                 p_now = pm.flib.stukel_invlogit(eps_p_f, a1, a2)
+
                 out = 0.
                 for i in xrange(len(value)):
                     out += interp.splev(p_now[i], splrep[i])
@@ -229,7 +227,6 @@ def make_model(lon,lat,t,input_data,covariate_keys,pos,neg,lo_age=None,up_age=No
         for i in xrange(len(eps_p_f_list)):
             out[chunk*i:min((i+1)*chunk, data_mesh.shape[0])] = eps_p_f_list[i]
         return out
-    
 
     out = locals()
 
